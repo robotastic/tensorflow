@@ -103,7 +103,7 @@ TfLiteStatus FeatureProvider::PopulateFeatureData(
         error_reporter->Report("Audio data size %d too small, want %d",
                                audio_samples_size, kMaxAudioSampleSize);
         return kTfLiteError;
-      }
+      } 
       uint8_t* new_slice_data = feature_data_ + (new_slice * kFeatureSliceSize);
       size_t num_samples_read;
       TfLiteStatus generate_status = GenerateMicroFeatures(

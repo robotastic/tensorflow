@@ -1,8 +1,9 @@
-# Settings for apollo3 evb and SparkFun Edge platforms.
+# Settings for apollo3 evb, SparkFun Redboard Artemis and SparkFun Edge platforms.
 ifeq ($(TARGET),$(filter $(TARGET),\
   apollo3evb\
   sparkfun_edge\
   sparkfun_edge2\
+  sparkfun_redboard_artemis\
   ))
   export PATH := $(MAKEFILE_DIR)/downloads/gcc_embedded/bin/:$(PATH)
   TARGET_ARCH := cortex-m4
