@@ -46,7 +46,7 @@ void RespondToCommand(tflite::ErrorReporter* error_reporter,
   //am_hal_gpio_output_clear(AM_BSP_GPIO_LED_YELLOW);
   //am_hal_gpio_output_clear(AM_BSP_GPIO_LED_GREEN);
   if (is_new_command) {
-    error_reporter->Report("Heard %s (%d) @%dms", found_command, score,
+    error_reporter->Report("\nHeard %s (%d) @%dms", found_command, score,
                            current_time);
     if (found_command[0] == 'y') {
       error_reporter->Report("\nYES");
