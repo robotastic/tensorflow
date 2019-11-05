@@ -229,7 +229,6 @@ void pdm_start_dma(tflite::ErrorReporter* error_reporter) {
 
   // Reset the PDM DMA flags.
   g_pdm_dma_error = false;
-  g_pdm_dma_error_reporter = error_reporter;
 }
 
 #if USE_MAYA
@@ -418,6 +417,7 @@ TfLiteStatus InitAudioRecording(tflite::ErrorReporter* error_reporter) {
   am_hal_interrupt_master_enable();
   am_hal_pdm_fifo_flush(g_pdm_handle);
   // Trigger the PDM DMA for the first time manually.
+  g_pdm_dma_error_reporter = error_reporter;
   pdm_start_dma(g_pdm_dma_error_reporter);
 
   error_reporter->Report("\nPDM DMA Threshold = %d", PDMn(0)->FIFOTHR);
