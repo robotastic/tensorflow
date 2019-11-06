@@ -13,14 +13,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "tensorflow/lite/experimental/micro/examples/micro_speech/main_functions.h"
+#include "tensorflow/lite/experimental/micro/examples/debug_speech/main_functions.h"
 
-#include "tensorflow/lite/experimental/micro/examples/micro_speech/audio_provider.h"
-#include "tensorflow/lite/experimental/micro/examples/micro_speech/command_responder.h"
-#include "tensorflow/lite/experimental/micro/examples/micro_speech/feature_provider.h"
-#include "tensorflow/lite/experimental/micro/examples/micro_speech/micro_features/micro_model_settings.h"
-#include "tensorflow/lite/experimental/micro/examples/micro_speech/micro_features/tiny_conv_micro_features_model_data.h"
-#include "tensorflow/lite/experimental/micro/examples/micro_speech/recognize_commands.h"
+#include "tensorflow/lite/experimental/micro/examples/debug_speech/audio_provider.h"
+#include "tensorflow/lite/experimental/micro/examples/debug_speech/command_responder.h"
+#include "tensorflow/lite/experimental/micro/examples/debug_speech/feature_provider.h"
+#include "tensorflow/lite/experimental/micro/examples/debug_speech/micro_features/micro_model_settings.h"
+#include "tensorflow/lite/experimental/micro/examples/debug_speech/micro_features/tiny_conv_micro_features_model_data.h"
+#include "tensorflow/lite/experimental/micro/examples/debug_speech/recognize_commands.h"
 #include "tensorflow/lite/experimental/micro/micro_error_reporter.h"
 #include "tensorflow/lite/experimental/micro/micro_interpreter.h"
 #include "tensorflow/lite/experimental/micro/micro_mutable_op_resolver.h"
@@ -50,7 +50,7 @@ int32_t previous_time = 0;
 // Create an area of memory to use for input, output, and intermediate arrays.
 // The size of this will depend on the model you're using, and may need to be
 // determined by experimentation.
-constexpr int kTensorArenaSize = 15 * 1024;
+constexpr int kTensorArenaSize = 10 * 1024;
 uint8_t tensor_arena[kTensorArenaSize];
 }  // namespace
 
@@ -151,7 +151,7 @@ void loop() {
     error_reporter->Report("Invoke failed");
     return;
   }
-
+  /*
   // Obtain a pointer to the output tensor
   TfLiteTensor* output = interpreter->output(0);
   // Determine whether a command was recognized based on the output of inference
@@ -169,21 +169,8 @@ void loop() {
   // own function for a real application.
   RespondToCommand(error_reporter, current_time, found_command, score,
                    is_new_command);
-  /*                 
   if (is_new_command) {
     error_reporter->Report("\nHeard %s (%d) @%dms", found_command, score,
                            current_time);
-    if (found_command[0] == 'y') {
-      error_reporter->Report("\nYES");
-      //am_hal_gpio_output_set(AM_BSP_GPIO_LED_YELLOW);
-    }
-    if (found_command[0] == 'n') {
-      error_reporter->Report("\nNO");
-      //am_hal_gpio_output_set(AM_BSP_GPIO_LED_RED);
-    }
-    if (found_command[0] == 'u') {
-      error_reporter->Report("\nUNKNOWN");
-      //am_hal_gpio_output_set(AM_BSP_GPIO_LED_GREEN);
-    }
   }*/
 }

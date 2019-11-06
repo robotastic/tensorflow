@@ -13,18 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "tensorflow/lite/experimental/micro/examples/micro_speech/command_responder.h"
+#include "tensorflow/lite/experimental/micro/examples/debug_speech/command_responder.h"
 
 #include "am_bsp.h"  // NOLINT
-#include "am_util.h"  // NOLINT
 
 // This implementation will light up the LEDs on the board in response to
 // different commands.
 void RespondToCommand(tflite::ErrorReporter* error_reporter,
                       int32_t current_time, const char* found_command,
                       uint8_t score, bool is_new_command) {
-  //static bool is_initialized = false;
-  /*
+  static bool is_initialized = false;
   if (!is_initialized) {
     // Setup LED's as outputs
     //am_hal_gpio_pinconfig(AM_BSP_GPIO_LED_RED, g_AM_HAL_GPIO_OUTPUT_12);
@@ -32,28 +30,24 @@ void RespondToCommand(tflite::ErrorReporter* error_reporter,
     //am_hal_gpio_pinconfig(AM_BSP_GPIO_LED_GREEN, g_AM_HAL_GPIO_OUTPUT_12);
     //am_hal_gpio_pinconfig(AM_BSP_GPIO_LED_YELLOW, g_AM_HAL_GPIO_OUTPUT_12);
     is_initialized = true;
-  }*/
-  
-  //static int count = 0;
+  }
+  static int count = 0;
 
   // Toggle the blue LED every time an inference is performed.
-  /*++count;
+  ++count;
   if (count & 1) {
     am_hal_gpio_output_set(AM_BSP_GPIO_LED_BLUE);
   } else {
     am_hal_gpio_output_clear(AM_BSP_GPIO_LED_BLUE);
-  }*/
-  //am_devices_led_toggle(am_bsp_psLEDs, 1);
+  }
 
   // Turn on the yellow LED if 'yes' was heard.
   //am_hal_gpio_output_clear(AM_BSP_GPIO_LED_RED);
   //am_hal_gpio_output_clear(AM_BSP_GPIO_LED_YELLOW);
   //am_hal_gpio_output_clear(AM_BSP_GPIO_LED_GREEN);
   if (is_new_command) {
-    uint32_t delay = 60;
-    error_reporter->Report("\nHeard %s (%d) @%dms\n", found_command, score,
+    error_reporter->Report("\nHeard %s (%d) @%dms", found_command, score,
                            current_time);
-    am_util_delay_ms(delay);
     if (found_command[0] == 'y') {
       error_reporter->Report("\nYES");
       //am_hal_gpio_output_set(AM_BSP_GPIO_LED_YELLOW);

@@ -15,11 +15,13 @@ limitations under the License.
 
 // Apollo3 EVB specific features compile options:
 // USE AM_BSP_NUM_LEDS : LED initialization and management per EVB target (# of
-// LEDs defined in EVB BSP) 
-// USE_TIME_STAMP : Enable timers and time stamping for debug and performance 
-// profiling (customize per application)
+// LEDs defined in EVB BSP) USE_TIME_STAMP : Enable timers and time stamping for
+// debug and performance profiling (customize per application) USE_DEBUG_GPIO :
+// Enable GPIO flag polling for debug and performance profiling (customize per
+// application) USE_MAYA : Enable specific pin configuration and features for
+// AP3B "quarter" sized board
 
-#include "tensorflow/lite/experimental/micro/examples/micro_speech/audio_provider.h"
+#include "tensorflow/lite/experimental/micro/examples/debug_speech/audio_provider.h"
 
 #include <limits>
 
@@ -27,7 +29,7 @@ limitations under the License.
 #include "am_bsp.h"         // NOLINT
 #include "am_mcu_apollo.h"  // NOLINT
 #include "am_util.h"        // NOLINT
-#include "tensorflow/lite/experimental/micro/examples/micro_speech/micro_features/micro_model_settings.h"
+#include "tensorflow/lite/experimental/micro/examples/debug_speech/micro_features/micro_model_settings.h"
 
 namespace {
 
@@ -84,6 +86,15 @@ static am_hal_ctimer_config_t g_sContTimer = {
 
 // ARPIT TODO : Implement low power configuration
 void custom_am_bsp_low_power_init(void) {
+#if USE_MAYA
+  // Make sure SWO/ITM/TPIU is disabled.
+  // SBL may not get it completely shut down.
+  am_bsp_itm_printf_disable();
+#else
+  // Initialize the printf interface for AP3B ITM/SWO output.
+  am_bsp_itm_printf_enable();
+#endif
+
   // Initialize for low power in the power control block
   // am_hal_pwrctrl_low_power_init();
 
@@ -103,7 +114,6 @@ void custom_am_bsp_low_power_init(void) {
   // power up), the FET gates are floating and
   // partially illuminating the LEDs.
   //
-  /*
   uint32_t ux, ui32GPIONumber;
   for (ux = 0; ux < AM_BSP_NUM_LEDS; ux++) {
     ui32GPIONumber = am_bsp_psLEDs[ux].ui32GPIONumber;
@@ -120,7 +130,7 @@ void custom_am_bsp_low_power_init(void) {
     am_hal_gpio_state_write(ui32GPIONumber,
                             AM_HAL_GPIO_OUTPUT_TRISTATE_DISABLE);
     am_hal_gpio_state_write(ui32GPIONumber, AM_HAL_GPIO_OUTPUT_CLEAR);
-  }*/
+  }
 #endif  // AM_BSP_NUM_LEDS
 
 }  // am_bsp_low_power_init()
@@ -170,7 +180,7 @@ am_hal_pdm_config_t g_sPdmConfig = {
     .ePDMClkSource = AM_HAL_PDM_INTERNAL_CLK,
     .bPDMSampleDelay = 0,
     .bDataPacking = 0,
-    .ePCMChannels = AM_BSP_PDM_CHANNEL,
+    .ePCMChannels = AM_HAL_PDM_CHANNEL_LEFT,
     .ui32GainChangeDelay = 1,
     .bI2SEnable = 0,
     .bSoftMute = 0,
@@ -191,17 +201,24 @@ extern "C" void pdm_init(void) {
   //
   // Configure the necessary pins.
   //
-  am_hal_gpio_pinconfig(AM_BSP_PDM_CLOCK, g_AM_BSP_PDM_CLOCK);
-  am_hal_gpio_pinconfig(AM_BSP_PDM_DATA, g_AM_BSP_PDM_DATA);
+  am_hal_gpio_pincfg_t sPinCfg = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+  //
+  // AP3B EVB w/ PDM MIC in slot3
+  //
+  sPinCfg.uFuncSel = AM_HAL_PIN_12_PDMCLK;
+  am_hal_gpio_pinconfig(12, sPinCfg);
+
+  sPinCfg.uFuncSel = AM_HAL_PIN_11_PDMDATA;
+  am_hal_gpio_pinconfig(11, sPinCfg);
 
   //
   // Configure and enable PDM interrupts (set up to trigger on DMA
   // completion).
   //
-  am_hal_pdm_interrupt_enable(g_pdm_handle, ( AM_HAL_PDM_INT_DERR   | 
-                                              AM_HAL_PDM_INT_DCMP   |
-                                              AM_HAL_PDM_INT_UNDFL  | 
-                                              AM_HAL_PDM_INT_OVF));
+  am_hal_pdm_interrupt_enable(g_pdm_handle,
+                              (AM_HAL_PDM_INT_DERR | AM_HAL_PDM_INT_DCMP |
+                               AM_HAL_PDM_INT_UNDFL | AM_HAL_PDM_INT_OVF));
 
   NVIC_EnableIRQ(PDM_IRQn);
 
@@ -230,6 +247,7 @@ void pdm_start_dma(tflite::ErrorReporter* error_reporter) {
 
   // Reset the PDM DMA flags.
   g_pdm_dma_error = false;
+  g_pdm_dma_error_reporter = error_reporter;
 }
 
 #if USE_MAYA
@@ -255,10 +273,10 @@ extern "C" void power_down_sequence(void) {
   am_util_delay_ms(200);  // Debounce Delay
   am_hal_gpio_interrupt_clear(AM_HAL_GPIO_BIT(AM_BSP_GPIO_BUTTON0));
   am_hal_gpio_interrupt_enable(AM_HAL_GPIO_BIT(AM_BSP_GPIO_BUTTON0));
-/*
+
   for (int ix = 0; ix < AM_BSP_NUM_LEDS; ix++) {
     am_devices_led_off(am_bsp_psLEDs, ix);
-  }*/
+  }
 
   am_hal_sysctrl_sleep(AM_HAL_SYSCTRL_SLEEP_DEEP);
   // Apollo3 will be < 3uA in deep sleep
@@ -394,13 +412,40 @@ TfLiteStatus InitAudioRecording(tflite::ErrorReporter* error_reporter) {
   error_reporter->Report("FPU Enabled.");
 
   // Configure the LEDs.
-  /*
   am_devices_led_array_init(am_bsp_psLEDs, AM_BSP_NUM_LEDS);
   // Turn the LEDs off
   for (int ix = 0; ix < AM_BSP_NUM_LEDS; ix++) {
     am_devices_led_off(am_bsp_psLEDs, ix);
   }
-*/
+
+#if USE_MAYA
+  // Configure Power Button
+  am_hal_gpio_pinconfig(AM_BSP_GPIO_BUTTON_POWER, g_AM_BSP_GPIO_BUTTON_POWER);
+
+  // Clear and Enable the GPIO Interrupt (write to clear).
+  am_hal_gpio_interrupt_clear(AM_HAL_GPIO_BIT(AM_BSP_GPIO_BUTTON_POWER));
+  am_hal_gpio_interrupt_register(AM_BSP_GPIO_BUTTON_POWER,
+                                 power_button_handler);
+  am_hal_gpio_interrupt_enable(AM_HAL_GPIO_BIT(AM_BSP_GPIO_BUTTON_POWER));
+
+  // Enable GPIO interrupts to the NVIC.
+  NVIC_EnableIRQ(GPIO_IRQn);
+#endif  // USE_MAYA
+
+#if USE_DEBUG_GPIO
+  // DEBUG : GPIO flag polling.
+  // Configure the GPIOs for flag polling.
+  am_hal_gpio_pinconfig(31, g_AM_HAL_GPIO_OUTPUT);  // Slot1 AN pin
+  am_hal_gpio_pinconfig(39, g_AM_HAL_GPIO_OUTPUT);  // Slot1 RST pin
+  am_hal_gpio_pinconfig(44, g_AM_HAL_GPIO_OUTPUT);  // Slot1 CS pin
+  am_hal_gpio_pinconfig(48, g_AM_HAL_GPIO_OUTPUT);  // Slot1 PWM pin
+
+  am_hal_gpio_pinconfig(32, g_AM_HAL_GPIO_OUTPUT);  // Slot2 AN pin
+  am_hal_gpio_pinconfig(46, g_AM_HAL_GPIO_OUTPUT);  // Slot2 RST pin
+  am_hal_gpio_pinconfig(42, g_AM_HAL_GPIO_OUTPUT);  // Slot2 CS pin
+  am_hal_gpio_pinconfig(47, g_AM_HAL_GPIO_OUTPUT);  // Slot2 PWM pin
+#endif
+
   // Ensure the CPU is running as fast as possible.
   // enable_burst_mode(error_reporter);
 
@@ -419,13 +464,12 @@ TfLiteStatus InitAudioRecording(tflite::ErrorReporter* error_reporter) {
   am_hal_interrupt_master_enable();
   am_hal_pdm_fifo_flush(g_pdm_handle);
   // Trigger the PDM DMA for the first time manually.
-  g_pdm_dma_error_reporter = error_reporter;
   pdm_start_dma(g_pdm_dma_error_reporter);
 
   error_reporter->Report("\nPDM DMA Threshold = %d", PDMn(0)->FIFOTHR);
 
   // Turn on LED 0 to indicate PDM initialized
-  //am_devices_led_on(am_bsp_psLEDs, 0);
+  am_devices_led_on(am_bsp_psLEDs, 0);
 
   return kTfLiteOk;
 }
@@ -433,6 +477,12 @@ TfLiteStatus InitAudioRecording(tflite::ErrorReporter* error_reporter) {
 TfLiteStatus GetAudioSamples(tflite::ErrorReporter* error_reporter,
                              int start_ms, int duration_ms,
                              int* audio_samples_size, int16_t** audio_samples) {
+#if USE_MAYA
+  if (g_PowerOff) {
+    power_down_sequence();
+  }
+#endif  // USE_MAYA
+
   if (!g_is_audio_initialized) {
     TfLiteStatus init_status = InitAudioRecording(error_reporter);
     if (init_status != kTfLiteOk) {
@@ -440,6 +490,11 @@ TfLiteStatus GetAudioSamples(tflite::ErrorReporter* error_reporter,
     }
     g_is_audio_initialized = true;
   }
+
+#if USE_DEBUG_GPIO
+  // DEBUG : GPIO flag polling.
+  am_hal_gpio_state_write(39, AM_HAL_GPIO_OUTPUT_SET);  // Slot1 RST pin
+#endif
 
   // This should only be called when the main thread notices that the latest
   // audio sample data timestamp has changed, so that there's new data in the
@@ -455,9 +510,14 @@ TfLiteStatus GetAudioSamples(tflite::ErrorReporter* error_reporter,
     const int capture_index = (start_offset + i) % kAudioCaptureBufferSize;
     g_audio_output_buffer[i] = g_audio_capture_buffer[capture_index];
   }
-  
+
   *audio_samples_size = kMaxAudioSampleSize;
   *audio_samples = g_audio_output_buffer;
+
+#if USE_DEBUG_GPIO
+  // DEBUG : GPIO flag polling.
+  am_hal_gpio_state_write(39, AM_HAL_GPIO_OUTPUT_CLEAR);  // Slot1 RST pin
+#endif
 
   return kTfLiteOk;
 }

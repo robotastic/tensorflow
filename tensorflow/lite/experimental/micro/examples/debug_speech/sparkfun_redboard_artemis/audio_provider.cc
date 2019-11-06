@@ -19,7 +19,7 @@ limitations under the License.
 // USE_TIME_STAMP : Enable timers and time stamping for debug and performance 
 // profiling (customize per application)
 
-#include "tensorflow/lite/experimental/micro/examples/micro_speech/audio_provider.h"
+#include "tensorflow/lite/experimental/micro/examples/debug_speech/audio_provider.h"
 
 #include <limits>
 
@@ -27,7 +27,7 @@ limitations under the License.
 #include "am_bsp.h"         // NOLINT
 #include "am_mcu_apollo.h"  // NOLINT
 #include "am_util.h"        // NOLINT
-#include "tensorflow/lite/experimental/micro/examples/micro_speech/micro_features/micro_model_settings.h"
+#include "tensorflow/lite/experimental/micro/examples/debug_speech/micro_features/micro_model_settings.h"
 
 namespace {
 
@@ -103,7 +103,6 @@ void custom_am_bsp_low_power_init(void) {
   // power up), the FET gates are floating and
   // partially illuminating the LEDs.
   //
-  /*
   uint32_t ux, ui32GPIONumber;
   for (ux = 0; ux < AM_BSP_NUM_LEDS; ux++) {
     ui32GPIONumber = am_bsp_psLEDs[ux].ui32GPIONumber;
@@ -120,7 +119,7 @@ void custom_am_bsp_low_power_init(void) {
     am_hal_gpio_state_write(ui32GPIONumber,
                             AM_HAL_GPIO_OUTPUT_TRISTATE_DISABLE);
     am_hal_gpio_state_write(ui32GPIONumber, AM_HAL_GPIO_OUTPUT_CLEAR);
-  }*/
+  }
 #endif  // AM_BSP_NUM_LEDS
 
 }  // am_bsp_low_power_init()
@@ -255,10 +254,10 @@ extern "C" void power_down_sequence(void) {
   am_util_delay_ms(200);  // Debounce Delay
   am_hal_gpio_interrupt_clear(AM_HAL_GPIO_BIT(AM_BSP_GPIO_BUTTON0));
   am_hal_gpio_interrupt_enable(AM_HAL_GPIO_BIT(AM_BSP_GPIO_BUTTON0));
-/*
+
   for (int ix = 0; ix < AM_BSP_NUM_LEDS; ix++) {
     am_devices_led_off(am_bsp_psLEDs, ix);
-  }*/
+  }
 
   am_hal_sysctrl_sleep(AM_HAL_SYSCTRL_SLEEP_DEEP);
   // Apollo3 will be < 3uA in deep sleep
@@ -283,6 +282,20 @@ extern "C" void am_gpio_isr(void) {
 extern "C" void power_button_handler(void) { g_PowerOff = 1; }
 
 #endif  // USE_MAYA
+
+void dump_buffer(int16_t* data, int length) {
+ am_util_stdio_printf("+++ frame +++");
+  for (uint32_t i = 0; i < length; i++) {
+    if ((i & 0xF) == 0x00) {
+      am_util_stdio_printf("\n\r%8d ", i);
+      // this delay is to let itm have time to flush out data.
+      am_util_delay_ms(1);
+    }
+    am_util_stdio_printf("%6d ", data[i]);
+  }
+  am_util_stdio_printf("\n\r--- frame ---\n\r");
+  am_util_delay_ms(1);
+}
 
 // Interrupt handler for the PDM.
 extern "C" void am_pdm0_isr(void) {
@@ -335,6 +348,11 @@ extern "C" void am_pdm0_isr(void) {
     g_total_samples_captured += slotCount;
     g_latest_audio_timestamp =
         (g_total_samples_captured / (kAudioSampleFrequency / 1000));
+    // Debug 
+    if (g_latest_audio_timestamp > 2000) {
+        dump_buffer( g_audio_capture_buffer, kAudioCaptureBufferSize);
+        while(true) {};
+      }
   }
 
   // If we got a DMA error, set the flag.
@@ -394,13 +412,12 @@ TfLiteStatus InitAudioRecording(tflite::ErrorReporter* error_reporter) {
   error_reporter->Report("FPU Enabled.");
 
   // Configure the LEDs.
-  /*
   am_devices_led_array_init(am_bsp_psLEDs, AM_BSP_NUM_LEDS);
   // Turn the LEDs off
   for (int ix = 0; ix < AM_BSP_NUM_LEDS; ix++) {
     am_devices_led_off(am_bsp_psLEDs, ix);
   }
-*/
+
   // Ensure the CPU is running as fast as possible.
   // enable_burst_mode(error_reporter);
 
@@ -425,7 +442,7 @@ TfLiteStatus InitAudioRecording(tflite::ErrorReporter* error_reporter) {
   error_reporter->Report("\nPDM DMA Threshold = %d", PDMn(0)->FIFOTHR);
 
   // Turn on LED 0 to indicate PDM initialized
-  //am_devices_led_on(am_bsp_psLEDs, 0);
+  am_devices_led_on(am_bsp_psLEDs, 0);
 
   return kTfLiteOk;
 }
