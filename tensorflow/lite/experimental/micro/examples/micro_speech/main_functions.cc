@@ -167,8 +167,8 @@ void loop() {
   // Do something based on the recognized command. The default implementation
   // just prints to the error console, but you should replace this with your
   // own function for a real application.
-  /*RespondToCommand(error_reporter, current_time, found_command, score,
-                   is_new_command);*/
+  RespondToCommand(error_reporter, current_time, found_command, score,
+                   is_new_command);
   if (is_new_command) {
     error_reporter->Report("\nHeard %s (%d) @%dms", found_command, score,
                            current_time);

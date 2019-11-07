@@ -22,16 +22,19 @@ limitations under the License.
 void RespondToCommand(tflite::ErrorReporter* error_reporter,
                       int32_t current_time, const char* found_command,
                       uint8_t score, bool is_new_command) {
-  static bool is_initialized = false;
+  /*static bool is_initialized = false;
   if (!is_initialized) {
     // Setup LED's as outputs
     //am_hal_gpio_pinconfig(AM_BSP_GPIO_LED_RED, g_AM_HAL_GPIO_OUTPUT_12);
     am_hal_gpio_pinconfig(AM_BSP_GPIO_LED_BLUE, g_AM_HAL_GPIO_OUTPUT_12);
     //am_hal_gpio_pinconfig(AM_BSP_GPIO_LED_GREEN, g_AM_HAL_GPIO_OUTPUT_12);
     //am_hal_gpio_pinconfig(AM_BSP_GPIO_LED_YELLOW, g_AM_HAL_GPIO_OUTPUT_12);
+    am_hal_gpio_pinconfig(35, g_AM_HAL_GPIO_OUTPUT_12);
+    am_hal_gpio_pinconfig(4, g_AM_HAL_GPIO_OUTPUT_12);
+    am_hal_gpio_pinconfig(22, g_AM_HAL_GPIO_OUTPUT_12);
     is_initialized = true;
-  }
-  static int count = 0;
+  }*/
+ /* static int count = 0;
 
   // Toggle the blue LED every time an inference is performed.
   ++count;
@@ -39,25 +42,34 @@ void RespondToCommand(tflite::ErrorReporter* error_reporter,
     am_hal_gpio_output_set(AM_BSP_GPIO_LED_BLUE);
   } else {
     am_hal_gpio_output_clear(AM_BSP_GPIO_LED_BLUE);
-  }
+  }*/
 
   // Turn on the yellow LED if 'yes' was heard.
+
   //am_hal_gpio_output_clear(AM_BSP_GPIO_LED_RED);
   //am_hal_gpio_output_clear(AM_BSP_GPIO_LED_YELLOW);
   //am_hal_gpio_output_clear(AM_BSP_GPIO_LED_GREEN);
   if (is_new_command) {
+    
+    am_hal_gpio_output_clear(35);
+    am_hal_gpio_output_clear(4);
+    am_hal_gpio_output_clear(22);
+
     error_reporter->Report("\nHeard %s (%d) @%dms", found_command, score,
                            current_time);
     if (found_command[0] == 'y') {
       error_reporter->Report("\nYES");
+      am_hal_gpio_output_set(22);
       //am_hal_gpio_output_set(AM_BSP_GPIO_LED_YELLOW);
     }
     if (found_command[0] == 'n') {
       error_reporter->Report("\nNO");
+      am_hal_gpio_output_set(35);
       //am_hal_gpio_output_set(AM_BSP_GPIO_LED_RED);
     }
     if (found_command[0] == 'u') {
       error_reporter->Report("\nUNKNOWN");
+      am_hal_gpio_output_set(4);
       //am_hal_gpio_output_set(AM_BSP_GPIO_LED_GREEN);
     }
   }
