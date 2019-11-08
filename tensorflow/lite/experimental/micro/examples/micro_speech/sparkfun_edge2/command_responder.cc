@@ -41,21 +41,22 @@ void RespondToCommand(tflite::ErrorReporter* error_reporter,
     am_hal_gpio_output_clear(AM_BSP_GPIO_LED_BLUE);
   }
 
-  // Turn on the yellow LED if 'yes' was heard.
-  am_hal_gpio_output_clear(AM_BSP_GPIO_LED_RED);
-  am_hal_gpio_output_clear(AM_BSP_GPIO_LED_YELLOW);
-  am_hal_gpio_output_clear(AM_BSP_GPIO_LED_GREEN);
+
   if (is_new_command) {
+      // Turn on the yellow LED if 'yes' was heard.
+    am_hal_gpio_output_clear(AM_BSP_GPIO_LED_RED);
+    am_hal_gpio_output_clear(AM_BSP_GPIO_LED_YELLOW);
+    am_hal_gpio_output_clear(AM_BSP_GPIO_LED_GREEN);
     error_reporter->Report("Heard %s (%d) @%dms", found_command, score,
                            current_time);
     if (found_command[0] == 'y') {
-      am_hal_gpio_output_set(AM_BSP_GPIO_LED_YELLOW);
+      am_hal_gpio_output_set(AM_BSP_GPIO_LED_GREEN);
     }
     if (found_command[0] == 'n') {
       am_hal_gpio_output_set(AM_BSP_GPIO_LED_RED);
     }
     if (found_command[0] == 'u') {
-      am_hal_gpio_output_set(AM_BSP_GPIO_LED_GREEN);
+      am_hal_gpio_output_set(AM_BSP_GPIO_LED_YELLOW);
     }
   }
 }
