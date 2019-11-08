@@ -46,19 +46,26 @@ void RespondToCommand(tflite::ErrorReporter* error_reporter,
   //am_hal_gpio_output_clear(AM_BSP_GPIO_LED_YELLOW);
   //am_hal_gpio_output_clear(AM_BSP_GPIO_LED_GREEN);
   if (is_new_command) {
+
+    am_hal_gpio_output_clear(35);
+    am_hal_gpio_output_clear(4);
+    am_hal_gpio_output_clear(22);
     error_reporter->Report("\nHeard %s (%d) @%dms", found_command, score,
                            current_time);
-    /*if (found_command[0] == 'y') {
+    if (found_command[0] == 'y') {
       error_reporter->Report("\nYES");
+      am_hal_gpio_output_set(22);
       //am_hal_gpio_output_set(AM_BSP_GPIO_LED_YELLOW);
     }
     if (found_command[0] == 'n') {
       error_reporter->Report("\nNO");
+      am_hal_gpio_output_set(35);
       //am_hal_gpio_output_set(AM_BSP_GPIO_LED_RED);
     }
     if (found_command[0] == 'u') {
       error_reporter->Report("\nUNKNOWN");
+      am_hal_gpio_output_set(4);
       //am_hal_gpio_output_set(AM_BSP_GPIO_LED_GREEN);
-    }*/
+    }
   }
 }

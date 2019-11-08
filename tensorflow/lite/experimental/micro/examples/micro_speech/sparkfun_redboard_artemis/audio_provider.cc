@@ -399,6 +399,10 @@ TfLiteStatus InitAudioRecording(tflite::ErrorReporter* error_reporter) {
     am_devices_led_off(am_bsp_psLEDs, ix);
   }
 
+  am_hal_gpio_pinconfig(35, g_AM_HAL_GPIO_OUTPUT_12);
+  am_hal_gpio_pinconfig(4, g_AM_HAL_GPIO_OUTPUT_12);
+  am_hal_gpio_pinconfig(22, g_AM_HAL_GPIO_OUTPUT_12);
+  
   // Ensure the CPU is running as fast as possible.
   // enable_burst_mode(error_reporter);
 
